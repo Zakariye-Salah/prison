@@ -1,0 +1,294 @@
+// backend/routes/criminals.js
+const express = require('express');
+const router = express.Router();
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+
+const Criminal = require('../models/Criminal');
+const Room = require('../models/Room');
+const Prison = require('../models/Prison');
+const { authMiddleware, requireRole } = require('../middleware/auth');
+const { nextSeq } = require('../utils/counters');
+
+const multer = require('multer');
+const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '';
+    const safe = Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex') + ext;
+    cb(null, safe);
+  }
+});
+function fileFilter(req, file, cb) {
+  if (!file.mimetype.startsWith('image/')) return cb(new Error('Only image uploads are allowed'), false);
+  cb(null, true);
+}
+const upload = multer({ storage, limits: { fileSize: 3 * 1024 * 1024 }, fileFilter });
+
+function normalizePhotoUrl(obj, req) {
+  if (!obj) return obj;
+  if (obj.photoUrl && typeof obj.photoUrl === 'string' && !obj.photoUrl.startsWith('http')) {
+    let p = obj.photoUrl;
+    if (!p.startsWith('/')) p = '/' + p;
+    obj.photoUrl = `${req.protocol}://${req.get('host')}${p}`;
+  }
+  return obj;
+}
+
+router.get('/', async (req, res) => {
+  try {
+    const { q, status, page = 1, perPage = 20, committedType, minAge, maxAge, includeDeleted, roomId, prisonId } = req.query;
+    const query = (includeDeleted === '1' || includeDeleted === 'true') ? {} : { deletedAt: null };
+    if (q) {
+      query.$or = [
+        { prisonId: new RegExp('^' + q, 'i') },
+        { nationalId: new RegExp(q, 'i') },
+        { fullName: new RegExp(q, 'i') }
+      ];
+    }
+    if (status) query.status = status;
+    if (committedType) query.committedType = committedType;
+    if (roomId) query.roomId = roomId;
+    if (prisonId) query.prisonRef = prisonId;
+    if (minAge || maxAge) {
+      const now = new Date();
+      query.dob = {};
+      if (minAge) query.dob.$lte = new Date(now.getFullYear() - Number(minAge), now.getMonth(), now.getDate());
+      if (maxAge) query.dob.$gte = new Date(now.getFullYear() - Number(maxAge), now.getMonth(), now.getDate());
+    }
+    const skip = (Number(page) - 1) * Number(perPage);
+    const docs = await Criminal.find(query).populate('roomId').populate('prisonRef').sort({ createdAt: -1 }).skip(skip).limit(Number(perPage));
+    const out = docs.map(d => normalizePhotoUrl(d.toObject(), req));
+    res.json({ criminals: out });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+// POST create
+router.post('/', authMiddleware, requireRole('controller'), upload.single('photo'), async (req, res) => {
+  try {
+    const data = Object.assign({}, req.body);
+    if (!data.fullName) return res.status(400).json({ error: 'fullName required' });
+
+    if (data.fineAmount !== undefined) data.fineAmount = Number(data.fineAmount) || 0;
+    if (data.timeHeldStart) data.timeHeldStart = new Date(data.timeHeldStart);
+    if (data.releaseDate) data.releaseDate = new Date(data.releaseDate);
+    if (data.roomId === '') data.roomId = null;
+// Defensive: remove any incoming prisonId field — we generate prisonId code for each criminal
+if (data.prisonId) delete data.prisonId;
+// Ensure prisonRef is null if empty string
+if (data.prisonRef === '') data.prisonRef = null;
+
+    // generate unique prisonId code for this criminal (DNB..)
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    const seq = await nextSeq('prison-' + d.toISOString().slice(0,10), 3, '');
+    const prisonId = 'DNB' + dd + mm + yy + seq;
+    data.prisonId = prisonId;
+
+    if (req.file) data.photoUrl = `/uploads/${req.file.filename}`;
+
+    // keep prisonRef if supplied (string id) — mongoose will cast
+    if (!data.prisonRef) data.prisonRef = null;
+
+    data.createdBy = req.user ? req.user._id : null;
+
+    const c = await Criminal.create(data);
+    const obj = normalizePhotoUrl(c.toObject(), req);
+    const io = req.app.get('io');
+    if (io) io.emit('criminal:created', obj);
+    res.json({ ok: true, criminal: obj });
+  } catch (err) {
+    console.error('POST /api/criminals error', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT update
+router.put('/:id', authMiddleware, requireRole('controller'), upload.single('photo'), async (req, res) => {
+  try {
+    const data = Object.assign({}, req.body);
+    if (data.fineAmount !== undefined) data.fineAmount = Number(data.fineAmount) || 0;
+    if (data.timeHeldStart) data.timeHeldStart = new Date(data.timeHeldStart);
+    if (data.releaseDate) data.releaseDate = new Date(data.releaseDate);
+    if (data.roomId === '') data.roomId = null;
+// Defensive: never allow incoming prisonId to overwrite the unique criminal prisonId code
+if (data.prisonId) delete data.prisonId;
+// Normalize empty prisonRef -> null
+if (data.prisonRef === '') data.prisonRef = null;
+    if (req.file) data.photoUrl = `/uploads/${req.file.filename}`;
+
+    const c = await Criminal.findByIdAndUpdate(req.params.id, data, { new: true }).populate('roomId').populate('prisonRef');
+    if (!c) return res.status(404).json({ error: 'Not found' });
+    const obj = normalizePhotoUrl(c.toObject(), req);
+    const io = req.app.get('io');
+    if (io) io.emit('criminal:updated', obj);
+    res.json({ ok: true, criminal: obj });
+  } catch (err) {
+    console.error('PUT /api/criminals/:id error', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const c = await Criminal.findById(req.params.id).populate('roomId').populate('prisonRef');
+    if (!c) return res.status(404).json({ error: 'Not found' });
+    const obj = normalizePhotoUrl(c.toObject(), req);
+    // include both prisonRef and prisonId (string)
+    if (obj.prisonRef && obj.prisonRef.name) obj.prisonName = obj.prisonRef.name;
+    res.json({ criminal: obj });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+
+router.delete('/:id', authMiddleware, requireRole('controller'), async (req, res) => {
+  try {
+    await Criminal.findByIdAndUpdate(req.params.id, { deletedAt: new Date() });
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/:id/restore', authMiddleware, requireRole('controller'), async (req, res) => {
+  try {
+    await Criminal.findByIdAndUpdate(req.params.id, { deletedAt: null });
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/:id/permanent', authMiddleware, requireRole('controller'), async (req, res) => {
+  try {
+    await Criminal.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/:id/status', authMiddleware, requireRole('controller'), async (req, res) => {
+  try {
+    const { action } = req.body;
+    const c = await Criminal.findById(req.params.id);
+    if (!c) return res.status(404).json({ error: 'Not found' });
+
+    const now = Date.now();
+
+    // explicit actions
+    if (action === 'toggle') {
+      // toggle between in_prison and out
+      if (c.status === 'in_prison') {
+        // pause remaining if a releaseDate exists, otherwise set pausedRemainingMs = 0
+        if (c.releaseDate) {
+          const remaining = new Date(c.releaseDate).getTime() - now;
+          c.pausedRemainingMs = remaining > 0 ? remaining : 0;
+        } else {
+          c.pausedRemainingMs = 0;
+        }
+        c.releaseDate = null;
+        c.status = 'out';
+      } else {
+        // toggle back to in_prison -> resume remaining if pausedRemainingMs present
+        if (typeof c.pausedRemainingMs === 'number' && c.pausedRemainingMs > 0) {
+          c.releaseDate = new Date(now + Number(c.pausedRemainingMs));
+        }
+        c.pausedRemainingMs = null;
+        c.timeHeldStart = c.timeHeldStart || new Date();
+        c.status = 'in_prison';
+      }
+    } else if (action === 'out') {
+      // move to released/out: if there is a releaseDate compute remaining and pause it
+      if (c.releaseDate) {
+        const remaining = new Date(c.releaseDate).getTime() - now;
+        c.pausedRemainingMs = remaining > 0 ? remaining : 0;
+      } else {
+        // no scheduled release, set pausedRemainingMs to 0 to indicate paused
+        c.pausedRemainingMs = 0;
+      }
+      c.releaseDate = null;
+      c.status = 'out';
+    } else if (action === 'dead') {
+      // set to dead, clear release countdown
+      c.pausedRemainingMs = null;
+      c.releaseDate = null;
+      c.status = 'dead';
+    } else if (action === 'in_prison') {
+      // move back into prison: if pausedRemainingMs exists, resume it by creating a new releaseDate
+      if (typeof c.pausedRemainingMs === 'number' && c.pausedRemainingMs > 0) {
+        c.releaseDate = new Date(now + Number(c.pausedRemainingMs));
+      }
+      // if no pausedRemainingMs and no releaseDate you may leave releaseDate null (or set as desired)
+      c.pausedRemainingMs = null;
+      c.timeHeldStart = c.timeHeldStart || new Date();
+      c.status = 'in_prison';
+    } else if (['in_prison','out','dead'].includes(action)) {
+      // fallback: treat explicit state names similar to above
+      if (action === 'out') {
+        if (c.releaseDate) {
+          const remaining = new Date(c.releaseDate).getTime() - now;
+          c.pausedRemainingMs = remaining > 0 ? remaining : 0;
+        } else c.pausedRemainingMs = 0;
+        c.releaseDate = null;
+        c.status = 'out';
+      } else if (action === 'dead') {
+        c.pausedRemainingMs = null;
+        c.releaseDate = null;
+        c.status = 'dead';
+      } else {
+        if (typeof c.pausedRemainingMs === 'number' && c.pausedRemainingMs > 0) {
+          c.releaseDate = new Date(now + Number(c.pausedRemainingMs));
+        }
+        c.pausedRemainingMs = null;
+        c.timeHeldStart = c.timeHeldStart || new Date();
+        c.status = 'in_prison';
+      }
+    } else {
+      return res.status(400).json({ error: 'Unknown action' });
+    }
+
+    await c.save();
+
+    const updated = await Criminal.findById(c._id).populate('roomId').populate('prisonRef');
+    const obj = normalizePhotoUrl(updated.toObject(), req);
+
+    const io = req.app.get('io');
+    if (io) io.emit('criminal:status', obj);
+
+    res.json({ ok: true, criminal: obj });
+  } catch (err) {
+    console.error('POST /api/criminals/:id/status error', err);
+    res.status(500).json({ error: err.message || String(err) });
+  }
+});
+
+
+router.post('/:id/payments', authMiddleware, requireRole('controller'), async (req, res) => {
+  try {
+    const amount = Number(req.body.amount || 0);
+    const paidBy = req.body.paidBy || 'unknown';
+    const note = req.body.note || '';
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+    const c = await Criminal.findById(req.params.id);
+    if (!c) return res.status(404).json({ error: 'Not found' });
+    const paidSum = (c.payments || []).reduce((s, p) => s + (p.amount || 0), 0);
+    const remaining = (c.fineAmount || 0) - paidSum;
+    if (amount > remaining) return res.status(400).json({ error: 'Amount exceeds remaining fine' });
+    c.payments.push({ amount, paidBy, note });
+    await c.save();
+    res.json({ ok: true, criminal: c });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/:id/payments/:paymentId', authMiddleware, requireRole('controller'), async (req, res) => {
+  try {
+    const c = await Criminal.findById(req.params.id);
+    if (!c) return res.status(404).json({ error: 'Not found' });
+    c.payments = c.payments.filter(p => p._id.toString() !== req.params.paymentId);
+    await c.save();
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+module.exports = router;

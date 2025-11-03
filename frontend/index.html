@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Prison Management App</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- TOPBAR -->
+    <header class="topbar" role="banner">
+      <div class="brand">
+        <div class="logo">Xabsi<span class="brand-accent">App</span></div>
+        <div class="title">Diiwaanka Maxaabiista</div>
+      </div>
+
+      <!-- desktop horizontal nav -->
+      <nav class="nav-links" id="nav-links" aria-label="Primary navigation"></nav>
+
+      <div class="top-right">
+        <!-- mobile menu toggle (hidden on desktop) -->
+        <button id="toggle-sidebar" class="icon-btn" aria-expanded="false" aria-controls="mobile-nav-dropdown" aria-label="Open menu">☰</button>
+
+        <!-- mobile dropdown (hidden initially) -->
+        <div id="mobile-nav-dropdown" class="mobile-nav hidden" role="menu" aria-hidden="true"></div>
+      </div>
+    </header>
+
+    <!-- page toolbar: search / actions (below header) -->
+    <div class="page-toolbar" id="page-toolbar">
+      <div class="search-wrap">
+        <input id="global-search" class="search-field" placeholder="Search by prisonId, name or national ID..." />
+        <button id="search-btn" class="btn secondary">Raadi</button>
+      </div>
+      <div class="toolbar-actions" id="toolbar-actions"></div>
+    </div>
+
+    <!-- main content -->
+    <main id="view-wrap" class="main-column">
+      <div id="spinner" class="loading-spinner hidden" role="status" aria-live="polite">Raadin...</div>
+      <div id="view" class="view"></div>
+    </main>
+
+    <!-- a hidden secondary sidebar kept for progressive enhancement (not shown on desktop) -->
+    <aside class="sidebar hidden" id="left-sidebar" aria-label="Secondary navigation">
+      <div class="sidebar-brand">Xabsi<span class="brand-accent">App</span></div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-foot">v1.0 • Demo</div>
+    </aside>
+
+    <!-- templates -->
+    <template id="criminal-row">
+      <div class="card criminal-row skeleton" aria-busy="true">
+        <div class="thumb skeleton--avatar"></div>
+        <div class="meta">
+          <div class="line skeleton--line" style="width:45%"></div>
+          <div class="line skeleton--line" style="width:30%"></div>
+        </div>
+        <div class="actions"></div>
+      </div>
+    </template>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

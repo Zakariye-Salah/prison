@@ -1,0 +1,804 @@
+/* modern responsive theme - updated per request */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+:root{
+  --bg:#f6f7fb;
+  --card:#fff;
+  --muted:#6b7280;
+  --primary:#0b5ed7;
+  --primary-100:#e9f2ff;
+  --accent:#6f42c1;
+  --danger:#ef4444;
+  --radius:12px;
+  --shadow-1: 0 6px 20px rgba(16,24,40,0.06);
+  --shadow-2: 0 10px 30px rgba(11,94,215,0.06);
+  --max-width:1300px;
+
+}
+
+
+/* --- Fixed header + toolbar (always visible) --- */
+:root {
+  --topbar-height: 64px;   /* default; JS will overwrite at runtime */
+  --toolbar-height: 56px;  /* default; JS will overwrite at runtime */
+}
+
+/* make topbar fixed to top of viewport */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 2200;
+  /* keep visual styling */
+  background: linear-gradient(180deg,#fff,#fbfbff);
+  box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+}
+
+/* page-toolbar sits under topbar */
+.page-toolbar {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  right: 0;
+  z-index: 2150;
+  background: rgba(255,255,255,0.98);
+  border-bottom: 1px solid rgba(11,94,215,0.03);
+  backdrop-filter: blur(4px);
+  display: flex;              /* keep layout */
+  align-items: center;
+  padding: 8px 14px;
+}
+
+/* ensure the mobile menu dropdown sits under toolbar (JS will set exact top too) */
+.mobile-nav {
+  position: absolute; /* absolute; we'll set top with JS */
+  right: 14px;
+  z-index: 2300;
+  min-width: 220px;
+}
+
+/* content area: avoid being hidden under fixed header/toolbars
+   the JS will set .app-shell padding-top dynamically; this is a fallback */
+.app-shell {
+  padding-top: calc(var(--topbar-height) + var(--toolbar-height) + 20px);
+}
+
+/* small tweak: ensure view container has no negative margin/padding */
+#view { margin-top: 0; }
+
+/* if you had previous "sticky" rules, this ensures the fixed header looks consistent */
+.topbar, .page-toolbar { transition: box-shadow .12s ease, transform .12s ease; }
+
+/* small mobile adjustments (keeps toolbar compact) */
+@media (max-width:720px){
+  :root { --toolbar-height: 56px; --topbar-height: 64px; }
+  .page-toolbar { padding: 8px 10px; }
+}
+ 
+
+/* base */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:Inter,system-ui,Arial;
+  background:var(--bg);
+  color:#0f1724;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* app shell */
+.app-shell{
+  max-width:var(--max-width);
+  margin:18px auto;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* topbar */
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  background:linear-gradient(180deg,#fff,#fbfbff);
+  padding:10px 14px;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-1);
+}
+
+/* brand */
+.brand{display:flex;align-items:center;gap:10px}
+.logo{font-weight:800;color:var(--accent);padding:6px 8px;border-radius:8px;background:linear-gradient(90deg, rgba(111,66,193,0.08), rgba(11,94,215,0.06))}
+.title{font-weight:700}
+
+/* desktop horizontal nav */
+.nav-links{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  overflow:auto;
+  padding:6px 8px;
+  flex:1;
+  justify-content:center;
+}
+.nav-links a, .nav-links .nav-user {
+  text-decoration:none;color:#0b1220;padding:8px 12px;border-radius:10px;font-weight:600;font-size:14px;
+  display:inline-flex;align-items:center;gap:8px;border:1px solid transparent;
+}
+.nav-links .nav-user { cursor:default; font-weight:700; color:#0b1220; background:transparent; }
+.nav-links a.active{
+  background:var(--primary-100);
+  color:var(--primary);
+  box-shadow:var(--shadow-2);
+}
+
+/* top-right & mobile elements */
+.top-right{display:flex;gap:8px;align-items:center}
+.icon-btn{background:transparent;border:none;font-size:20px;cursor:pointer;padding:8px;border-radius:8px}
+
+/* mobile dropdown */
+.mobile-nav{
+  position:absolute;
+  right:14px;
+  top:64px;
+  background:var(--card);
+  border-radius:12px;
+  min-width:220px;
+  box-shadow:0 20px 50px rgba(2,6,23,0.12);
+  overflow:hidden;
+  transform-origin:top right;
+  animation:pop .15s ease;
+  z-index:1200;
+}
+.mobile-nav.hidden{display:none}
+.mobile-nav a, .mobile-nav button {
+  display:block;padding:10px 12px;text-decoration:none;color:#0d1720;border-bottom:1px solid #f1f6ff;background:transparent; text-align:left; width:100%;
+}
+.mobile-nav a:last-child{border-bottom:none}
+.mobile-nav a:hover{background:var(--primary-100);color:var(--primary);}
+
+/* page toolbar (search area) */
+.page-toolbar{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  background:transparent;
+}
+.search-wrap{display:flex;gap:8px;align-items:center}
+.search-field{padding:10px 12px;border-radius:10px;border:1px solid #e6eefc;background:#fff;min-width:220px}
+.btn{background:var(--primary);color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:700}
+.btn.secondary{background:transparent;color:var(--primary);border:1px solid rgba(11,94,215,0.12)}
+
+/* main content */
+.main-column{display:flex;flex-direction:column;gap:12px;}
+
+/* cards & list */
+.card{background:var(--card);border-radius:12px;padding:12px;box-shadow:var(--shadow-1);display:flex;gap:12px;align-items:flex-start}
+.criminal-row .thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;background:#f1f6ff;flex:0 0 64px}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.meta{flex:1;min-width:0}
+.meta strong{display:block;margin-bottom:6px}
+.meta .muted{color:var(--muted);font-size:13px}
+
+/* skeleton / modal / form */
+.skeleton{background:linear-gradient(90deg,#eef5ff 25%,#f9fbff 50%,#eef5ff 75%);border-radius:8px}
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(7,12,23,0.45);z-index:1200;padding:18px}
+.modal .inner{width:100%;max-width:840px;max-height:90vh;overflow:auto;border-radius:12px;background:var(--card);padding:18px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.label{font-size:13px;color:var(--muted)}
+.skeleton--avatar{width:64px;height:64px;border-radius:10px}
+.skeleton--line{height:12px;border-radius:6px;margin:6px 0}
+
+/* small animation */
+@keyframes pop{from{transform:scale(.98) translateY(-6px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+
+/* responsive tweaks */
+@media (max-width:1000px){
+  .nav-links{display:none}           /* hide desktop horizontal nav on small screens */
+  #toggle-sidebar{display:inline-block}
+  .mobile-nav.hidden{display:none}
+  .page-toolbar{padding:8px 0}
+  .search-field{min-width:140px}
+  .app-shell{padding:10px}
+}
+
+/* desktop: hide hamburger */
+@media (min-width:1001px){
+  #toggle-sidebar{display:none}
+  .mobile-nav{display:none}
+  .sidebar{display:none} /* hide left sidebar on desktop to avoid duplicate */
+}
+
+/* small phones */
+@media (max-width:480px){
+  .search-field{min-width:110px}
+  .thumb{width:56px;height:56px}
+  .card{padding:10px;gap:10px}
+}
+
+
+
+
+/* Chart card niceties */
+.chart-card {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,251,255,0.98));
+  border: 1px solid rgba(11,94,215,0.04);
+  box-shadow: 0 18px 40px rgba(2,6,23,0.06);
+  border-radius: 12px;
+}
+
+/* chart control selects */
+.chart-controls .input {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(11,94,215,0.08);
+  background: #fff;
+  font-weight:700;
+}
+
+/* make the canvas container look roomy */
+.chart-card canvas { width: 100% !important; height: 360px !important; }
+
+/* fallback table look */
+#dashboard-fallback table { border-collapse: collapse; width: 100%; }
+#dashboard-fallback th, #dashboard-fallback td { border: 1px solid #eef3fb; padding: 8px; }
+#dashboard-fallback th { background: #f8fbff; font-weight:800; color: var(--primary); }
+
+/* small mobile tweak */
+@media (max-width:720px){
+  .chart-card { padding: 10px; }
+  .chart-card canvas { height: 300px !important; }
+  .chart-controls { gap:6px; }
+}
+
+
+
+/* Make prison title bigger and actions sit at the right */
+.prison-row .item-title { font-size: 18px; font-weight:800; color: var(--primary); }
+.prison-row .item-sub { font-size: 13px; color: var(--muted); }
+
+/* Ensure actions stay right and buttons look neat */
+.prison-row { display:flex; gap:12px; align-items:flex-start; }
+.prison-row .actions { margin-left: 12px; display:flex; gap:8px; align-items:center; flex-shrink:0; flex-direction:column; }
+/* horizontal on desktop */
+@media (min-width:1001px){
+  .prison-row .actions { flex-direction:row; }
+}
+.icon-small { padding:8px 10px; border-radius:8px; border:1px solid rgba(11,94,215,0.06); background:transparent; cursor:pointer; font-weight:700; }
+.icon-small.danger { color: var(--danger); border-color: rgba(239,68,68,0.12); }
+
+/* -------------------------
+   Modal & form — modern styles
+   (Add this to the end of your style.css)
+   Keeps existing styles untouched; enhances add/edit/login/register/profile modals
+   Responsive: 2-column forms on desktop, 1-column on small screens
+   ------------------------- */
+
+   .modal .inner {
+    padding: 20px;
+    border-radius: 14px;
+    max-width: 920px;
+    width: calc(100% - 32px);
+    box-shadow: 0 30px 60px rgba(2,6,23,0.14);
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,251,255,0.98));
+    position: relative;
+  }
+  
+  /* modal header */
+  .modal .inner h3 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: #071124;
+  }
+  
+  /* optional close icon if you add one */
+  .modal .inner .close-btn {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor:pointer;
+  }
+  
+  /* modern form grid: 2 columns desktop, 1 on narrow screens */
+  .modal .inner .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 12px;
+    margin-top: 10px;
+  }
+  
+  /* each form-row: label above control */
+  .modal .inner .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  /* labels */
+  .modal .inner .form-row .label,
+  .modal .inner .label {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  
+  /* inputs / selects / textarea — unified look */
+  .modal .inner .input,
+  .modal .inner input[type="text"],
+  .modal .inner input[type="email"],
+  .modal .inner input[type="password"],
+  .modal .inner input[type="number"],
+  .modal .inner input[type="date"],
+  .modal .inner input[type="datetime-local"],
+  .modal .inner select,
+  .modal .inner textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #e8f0ff;
+    background: #fff;
+    outline: none;
+    font-size: 14px;
+    color: #07203a;
+    transition: box-shadow .15s ease, border-color .12s ease, transform .08s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 40px;
+    box-shadow: none;
+    resize: vertical;
+  }
+  
+  /* focus state */
+  .modal .inner .input:focus,
+  .modal .inner select:focus,
+  .modal .inner textarea:focus {
+    border-color: rgba(11,94,215,0.18);
+    box-shadow: 0 6px 20px rgba(11,94,215,0.06);
+  }
+  
+  /* textarea */
+  .modal .inner textarea.input {
+    min-height: 96px;
+    padding-top: 10px;
+  }
+  
+  /* select: custom arrow using svg data uri */
+  .modal .inner select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8'%3E%3Cpath fill='%230b5ed7' d='M7 8L0 0h14z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px 8px;
+    padding-right: 36px;
+  }
+  
+  /* file input styling: modern file button & filename */
+  .modal .inner input[type="file"] {
+    padding: 8px 12px;
+    height: auto;
+  }
+  
+  /* File selector button (most modern browsers) */
+  .modal .inner input[type="file"]::file-selector-button {
+    margin-right: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(11,94,215,0.08);
+    background: linear-gradient(180deg, rgba(11,94,215,0.06), rgba(11,94,215,0.02));
+    color: var(--primary);
+    font-weight:700;
+    cursor:pointer;
+  }
+  
+  /* image preview block (if you choose to add preview element) */
+  .modal .inner .image-preview {
+    display:flex;
+    gap:12px;
+    align-items:center;
+    margin-top:6px;
+  }
+  .modal .inner .image-preview .thumb {
+    width:72px;
+    height:72px;
+    border-radius:10px;
+    overflow:hidden;
+    background:#f3f7ff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid #eef6ff;
+  }
+  .modal .inner .image-preview img{ width:100%; height:100%; object-fit:cover; display:block; }
+  
+  /* small helper text under controls */
+  .modal .inner .help-text {
+    font-size:12px;
+    color:var(--muted);
+    margin-top:4px;
+  }
+  
+  /* error styles */
+  .modal .inner .error {
+    color: var(--danger);
+    font-size:13px;
+    font-weight:700;
+    margin-top:6px;
+  }
+  
+  /* form actions container — buttons row */
+  .modal .inner > .form-actions,
+  .modal .inner > div:last-child {
+    display:flex;
+    gap:8px;
+    justify-content:flex-end;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  
+  /* primary & secondary buttons inside modals */
+  .modal .inner .btn {
+    padding:10px 14px;
+    border-radius:10px;
+    font-weight:700;
+    box-shadow: 0 10px 26px rgba(11,94,215,0.06);
+  }
+  .modal .inner .btn.secondary {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid rgba(11,94,215,0.10);
+    box-shadow: none;
+  }
+  
+  /* small icon-style buttons inside modal (view/edit buttons) */
+  .modal .inner .icon-small {
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid #eef4ff;
+    background: #fff;
+  }
+  
+  /* smaller screens: single column form */
+  @media (max-width: 760px) {
+    .modal .inner .form-grid { grid-template-columns: 1fr; }
+    .modal .inner { padding: 16px; max-width: 760px; }
+    .modal .inner .image-preview .thumb { width:60px; height:60px; }
+    .modal .inner .btn { width: auto; }
+    /* ensure the modal actions are comfortable on mobile */
+    .modal .inner > .form-actions,
+    .modal .inner > div:last-child { justify-content: center; }
+  }
+  
+  /* very small phones */
+  @media (max-width: 420px) {
+    .modal .inner h3 { font-size:16px; }
+    .modal .inner .input { font-size:13px; padding:10px; }
+    .modal .inner .form-grid { gap:10px; }
+  }
+  
+  /* subtle visual separation for modal sections (optional) */
+  .modal .inner .section {
+    border-radius:10px;
+    padding:10px;
+    background: linear-gradient(180deg, rgba(250,250,255,0.6), rgba(246,248,255,0.4));
+    border: 1px solid rgba(230,240,255,0.6);
+    margin-top: 10px;
+  }
+  
+  /* useful utilities */
+  .hidden { display:none !important; }
+  .center { display:flex; align-items:center; justify-content:center; }
+  
+  /* end modal & form styles */
+  /* full-size image viewer (click thumbnail to open) */
+.image-viewer{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(7,12,23,0.88);
+  z-index:1400;
+  padding:20px;
+  -webkit-overflow-scrolling:touch;
+}
+.image-viewer-inner{
+  position:relative;
+  max-width:1100px;
+  width:100%;
+  max-height:95vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+}
+.image-viewer-img{
+  max-width:100%;
+  max-height:85vh;
+  border-radius:10px;
+  box-shadow: 0 20px 60px rgba(2,6,23,0.6);
+  object-fit:contain;
+}
+.image-viewer-caption{
+  color:#e6eefc;
+  font-size:14px;
+  opacity:0.95;
+  text-align:center;
+  max-width:90%;
+  word-break:break-word;
+}
+
+/* close button floating */
+.image-viewer .close-btn{
+  position:absolute;
+  top:-14px;
+  right:-14px;
+  background:#ffffff;
+  color:#0b1220;
+  border:none;
+  width:40px;
+  height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  cursor:pointer;
+  font-weight:700;
+  box-shadow:0 8px 30px rgba(2,6,23,0.25);
+}
+
+/* mobile tweaks */
+@media (max-width:480px){
+  .image-viewer-inner{ padding:8px; }
+  .image-viewer-img{ max-height:75vh; border-radius:8px; }
+  .image-viewer .close-btn{ width:36px; height:36px; top:6px; right:6px; }
+}
+
+
+/* ---------- Criminal grid & card tweaks ---------- */
+.criminal-grid{
+  display:grid;
+  grid-template-columns:1fr; /* mobile default: 1 column */
+  gap:12px;
+  margin-top:12px;
+}
+
+/* desktop -> two columns */
+@media (min-width:1001px){
+  .criminal-grid{
+    grid-template-columns: 1fr 1fr; /* two cards per row on desktop */
+  }
+}
+
+/* tighten card layout specifically for criminal rows */
+.card.criminal-row{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  padding:12px;
+  border-radius:12px;
+  transition:transform .12s ease, box-shadow .12s ease;
+  min-height:88px;
+}
+
+/* hover lift */
+.card.criminal-row:hover{
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(2,6,23,0.06);
+}
+
+/* thumbnail size (keeps compact on mobile, slightly larger on desktop) */
+.card.criminal-row .thumb{
+  width:72px;
+  height:72px;
+  border-radius:10px;
+  overflow:hidden;
+  flex:0 0 72px;
+}
+@media (min-width:1001px){
+  .card.criminal-row .thumb{ width:80px; height:80px; flex:0 0 80px; }
+}
+.card.criminal-row .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+/* meta content stretches */
+.card.criminal-row .meta{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+
+/* actions container (buttons) */
+.card.criminal-row .actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-shrink:0;
+  margin-left:8px;
+  flex-direction:column; /* stacked on mobile by default for space */
+}
+
+/* make actions horizontal on desktop */
+@media (min-width:1001px){
+  .card.criminal-row .actions { flex-direction:row; }
+}
+
+/* small icon-style buttons used for View/Edit/Delete */
+.icon-small{
+  padding:6px 8px;
+  border-radius:8px;
+  border:1px solid rgba(11,94,215,0.08);
+  background:transparent;
+  cursor:pointer;
+  font-weight:600;
+  font-size:13px;
+  min-width:44px;
+  text-align:center;
+}
+
+/* Pay button (prominent) inside cards */
+.card.criminal-row .btn{
+  padding:6px 10px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:700;
+}
+
+/* secondary style for small destructive actions */
+.card.criminal-row .icon-small.danger{
+  border-color: rgba(239,68,68,0.12);
+  color: var(--danger);
+}
+
+/* tighter muted text in cards */
+.card.criminal-row .muted{ color:var(--muted); font-size:13px; }
+
+/* ensure card content wraps nicely on narrow screens */
+@media (max-width:480px){
+  .card.criminal-row{ gap:10px; padding:10px; align-items:center; }
+  .card.criminal-row .meta { font-size:14px; }
+  .card.criminal-row .actions { gap:6px; }
+  .icon-small{ padding:6px; min-width:40px; font-size:12px; }
+}
+
+/* optional: icon appearance when user hovers */
+.icon-small:hover{ background: rgba(11,94,215,0.04); box-shadow: 0 4px 14px rgba(11,94,215,0.04); }
+
+/* make the card actions never wrap the page */
+.card.criminal-row .actions button{ white-space:nowrap; }
+
+/* Keep accessibility: focus style for keyboard users */
+.icon-small:focus, .card.criminal-row .btn:focus{
+  outline: 3px solid rgba(11,94,215,0.12);
+  outline-offset: 3px;
+}
+
+/* ---------- Rooms & Prisons grids (responsive) ---------- */
+.rooms-grid, .prisons-grid {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin-top:12px;
+}
+
+/* desktop: two columns */
+@media (min-width:1001px){
+  .rooms-grid, .prisons-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* per-row tweaks */
+.room-row, .prison-row {
+  align-items:flex-start;
+  padding:12px;
+  gap:12px;
+  border-radius:12px;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+
+/* title + subtitle styling */
+.item-title{
+  font-size:18px;
+  font-weight:800;
+  color: var(--primary);
+  margin-bottom:6px;
+  word-break:break-word;
+}
+.item-sub{
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.25;
+}
+
+/* criminal name (big + colored) */
+.criminal-name{
+  font-size:16px;
+  font-weight:800;
+  color: var(--accent);
+  line-height:1.1;
+  margin-bottom:6px;
+  word-break:break-word;
+}
+
+/* actions area: stacked on mobile, horizontal on desktop */
+.card .actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-direction:column;
+  flex-shrink:0;
+}
+@media (min-width:1001px){
+  .card .actions{ flex-direction:row; }
+}
+
+/* icon-small button re-use (consistent look for View/Edit/Delete) */
+.icon-small{
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid rgba(11,94,215,0.06);
+  background:transparent;
+  cursor:pointer;
+  font-weight:700;
+  font-size:13px;
+  min-width:48px;
+  text-align:center;
+}
+
+/* destructive / danger variant */
+.icon-small.danger{
+  border-color: rgba(239,68,68,0.12);
+  color: var(--danger);
+}
+
+/* tight mobile sizing */
+@media (max-width:480px){
+  .item-title{ font-size:16px; }
+  .criminal-name{ font-size:15px; }
+  .icon-small{ padding:7px 8px; min-width:40px; font-size:12px; }
+  .card{ padding:10px; gap:10px; align-items:center; }
+}
+
+/* hover effect */
+.room-row:hover, .prison-row:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(2,6,23,0.06); }
+
+
+/* small criminals preview inside room cards */
+.room-criminals { gap:8px; align-items:center; }
+.room-criminals .crim-count { font-size:13px; color:var(--muted); font-weight:700; }
+
+/* avatar buttons */
+.room-criminals .crim-avatars { display:flex; gap:6px; align-items:center; }
+.room-criminals .avatar{
+  width:36px; height:36px; border-radius:8px; overflow:hidden; padding:0; border:1px solid rgba(0,0,0,0.04);
+  background:transparent; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.room-criminals .avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+.room-criminals .avatar-initial{
+  width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(180deg, #f3f7ff, #eef6ff); color:var(--primary); font-weight:800;
+}
+
+/* small more-pill */
+.room-criminals .more-pill{ padding:6px 8px; border-radius:8px; background:rgba(11,94,215,0.04); font-size:12px; color:var(--primary); }
+
+/* ensure actions align nicely for room cards */
+.room-row { display:flex; gap:12px; align-items:flex-start; }
+.room-row .actions { margin-left:12px; display:flex; gap:8px; align-items:center; flex-shrink:0; flex-direction:column; }
+@media (min-width:1001px){ .room-row .actions { flex-direction:row; } }
