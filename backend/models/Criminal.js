@@ -1,4 +1,4 @@
-// backend/models/Criminal.js
+// backend/models/Criminal.js (only the schema part shown)
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -15,7 +15,7 @@ const CriminalSchema = new Schema({
   fullName: { type: String, required: true },
   photoUrl: { type: String },
   roomId: { type: mongoose.Types.ObjectId, ref: 'Room', default: null },
-  prisonRef: { type: mongoose.Types.ObjectId, ref: 'Prison', default: null }, // new - reference to Prison
+  prisonRef: { type: mongoose.Types.ObjectId, ref: 'Prison', default: null },
   phone: { type: String },
   parentName: { type: String },
   parentPhone: { type: String },
@@ -28,10 +28,10 @@ const CriminalSchema = new Schema({
   status: { type: String, enum: ['not_sentenced','sentenced','in_prison','out','dead'], default: 'in_prison' },
   placeOfBirth: { type: String },
   timeHeldStart: { type: Date },
-  pausedRemainingMs: { type: Number, default: null }, // ms left when someone is released (paused)
   releaseDate: { type: Date },
   fineAmount: { type: Number, default: 0 },
   payments: [PaymentSchema],
+  pausedRemainingMs: { type: Number, default: null }, // new: pause/resume remaining time
   createdBy: { type: mongoose.Types.ObjectId, ref: 'User' },
   deletedAt: { type: Date, default: null }
 },{ timestamps: true });
