@@ -17,7 +17,12 @@
     "multer": "^2.0.2",
     "multer-s3": "^2.10.0",
     "pdfkit": "^0.13.0",
-    "socket.io": "^4.7.2"
+    "socket.io": "^4.7.2",
+
+
+  "compression": "^1.7.4",
+  "dotenv": "^16.4.1"
+
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
