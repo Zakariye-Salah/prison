@@ -8,13 +8,14 @@
     "seed": "node scripts/seed-admin.js"
   },
   "dependencies": {
+    "aws-sdk": "^2.1370.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "install": "^0.13.0",
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^7.4.3",
     "multer": "^2.0.2",
+    "multer-s3": "^2.10.0",
     "pdfkit": "^0.13.0",
     "socket.io": "^4.7.2"
   },
