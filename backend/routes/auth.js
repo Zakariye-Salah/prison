@@ -59,18 +59,18 @@ router.post('/login', async (req, res) => {
 
 // POST /auth/verify-admin-secret
 // { tempToken, secret } -> returns token if valid
+// POST /auth/verify-admin-secret
 router.post('/verify-admin-secret', async (req, res) => {
   try {
     const { tempToken, secret } = req.body || {};
     if (!tempToken || !secret) return res.status(400).json({ error: 'Missing tempToken or secret' });
-
-    // validate format quickly
     if (!/^\d{4}$/.test(String(secret))) return res.status(400).json({ error: 'Secret must be 4 digits' });
 
     let payload;
     try {
       payload = jwt.verify(tempToken, JWT_SECRET);
     } catch (e) {
+      console.warn('verify-admin-secret: tempToken verify failed', e.message);
       return res.status(400).json({ error: 'Invalid/expired temp token' });
     }
 
@@ -79,10 +79,15 @@ router.post('/verify-admin-secret', async (req, res) => {
     const user = await User.findById(payload.sub);
     if (!user || user.role !== 'controller') return res.status(400).json({ error: 'Invalid user for temp token' });
 
+    if (!user.secretHash) {
+      // helpful message — common root cause: controller account has no secret set
+      return res.status(400).json({ error: 'Controller account has no admin secret set. Please set a 4-digit secret for this account.' });
+    }
+
     const ok = await bcrypt.compare(String(secret), user.secretHash || '');
     if (!ok) return res.status(403).json({ error: 'Invalid secret' });
 
-    const token = jwt.sign({ sub: user._id, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    const token = jwt.sign({ sub: user._id, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES || '7d' });
     user.lastLogin = new Date();
     await user.save();
     res.json({ token, role: user.role, fullName: user.fullName });
@@ -91,5 +96,6 @@ router.post('/verify-admin-secret', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 module.exports = router;
