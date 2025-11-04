@@ -1,4 +1,4 @@
-// server.js
+// backend/server.js
 'use strict';
 const express = require('express');
 const http = require('http');
