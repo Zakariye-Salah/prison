@@ -86,18 +86,27 @@ if (S3_BUCKET && S3_REGION && S3_ACCESS_KEY_ID && S3_SECRET_ACCESS_KEY) {
 
 function normalizePhotoUrl(obj, req) {
   if (!obj) return obj;
-  // if it's an S3 full url or absolute http(s) already – keep
+  // allow using explicit PUBLIC_BACKEND setting to control the public-facing base URL
+  const PUBLIC_BACKEND = process.env.PUBLIC_BACKEND || '';
   if (obj.photoUrl && typeof obj.photoUrl === 'string') {
+    // if it's already an absolute URL, keep it
     if (obj.photoUrl.startsWith('http://') || obj.photoUrl.startsWith('https://')) {
       return obj;
     }
-    // otherwise, convert relative /uploads/... to absolute server URL
+    // otherwise it's a relative path (e.g. /uploads/xxxx or uploads/xxx) -> build absolute URL
     let p = obj.photoUrl;
     if (!p.startsWith('/')) p = '/' + p;
-    obj.photoUrl = `${req.protocol}://${req.get('host')}${p}`;
+    if (PUBLIC_BACKEND) {
+      // ensure no trailing slash
+      obj.photoUrl = PUBLIC_BACKEND.replace(/\/$/, '') + p;
+    } else {
+      // fallback to request host (may be localhost if not configured) 
+      obj.photoUrl = `${req.protocol}://${req.get('host')}${p}`;
+    }
   }
   return obj;
 }
+
 
 router.get('/', async (req, res) => {
   try {
